@@ -1,4 +1,6 @@
 use anyhow::Result;
+use chrono::Local;
+use chrono_english::{parse_date_string, Dialect};
 use super::cron_gen::natural_to_cron;
 
 #[derive(Debug, Clone)]
@@ -37,9 +39,36 @@ pub fn classify_schedule(input: &str) -> Result<ScheduleKind> {
     }
 
     // Otherwise, treat as a one-off
-    Ok(ScheduleKind::OneOff {
-        at_time: trimmed.to_string(),
-    })
+    let at_time = natural_to_at_time(&trimmed)?;
+    Ok(ScheduleKind::OneOff { at_time })
+}
+
+fn natural_to_at_time(input: &str) -> Result<String> {
+    // chrono-english does not recognise:
+    //   - "at" as a time separator  → strip it
+    //   - "noon" / "midnight" as time words  → replace with dot-format times
+    //     (12.00 / 0.00) which the informal_time parser handles correctly.
+    //
+    // Note: We keep MONTH-name-first order ("march 31 ...") so the parser
+    // takes the early-return MONTH DAY path and then parses the time from
+    // parse_time, rather than the DAY MONTH path which greedily consumes the
+    // next integer as a year.
+    let normalised: String = input
+        .split_whitespace()
+        .filter_map(|w| match w.to_lowercase().as_str() {
+            "at" => None,
+            "noon" => Some("12.00".to_string()),
+            "midnight" => Some("0.00".to_string()),
+            _ => Some(w.to_string()),
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    let now = Local::now();
+    let datetime = parse_date_string(&normalised, now, Dialect::Us)
+        .map_err(|e| anyhow::anyhow!("Could not parse one-off schedule '{input}': {e}"))?;
+    // at accepts "HH:MM YYYY-MM-DD"
+    Ok(datetime.format("%H:%M %Y-%m-%d").to_string())
 }
 
 fn is_cron_expression(input: &str) -> bool {
@@ -96,5 +125,29 @@ mod tests {
     fn test_bare_day_name_is_oneoff() {
         let result = classify_schedule("sunday 6pm").unwrap();
         assert!(matches!(result, ScheduleKind::OneOff { .. }));
+    }
+
+    #[test]
+    fn test_tomorrow_at_1am_produces_at_time() {
+        let result = classify_schedule("tomorrow at 1am").unwrap();
+        match result {
+            ScheduleKind::OneOff { at_time } => {
+                assert!(!at_time.is_empty());
+                assert!(at_time.contains(':'), "Expected formatted time, got: {at_time}");
+            }
+            _ => panic!("Expected OneOff"),
+        }
+    }
+
+    #[test]
+    fn test_specific_date_produces_at_time() {
+        let result = classify_schedule("march 31 at noon").unwrap();
+        match result {
+            ScheduleKind::OneOff { at_time } => {
+                assert!(!at_time.is_empty());
+                assert!(at_time.contains(':'));
+            }
+            _ => panic!("Expected OneOff"),
+        }
     }
 }
