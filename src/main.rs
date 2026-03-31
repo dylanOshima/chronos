@@ -15,7 +15,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Add { schedule, command, id, desc, source, force } => {
-            println!("add: schedule={schedule}, command={command}");
+            commands::add::run(schedule, command, id, desc, source, force)?;
         }
         Commands::Remove { identifier } => {
             println!("remove: {identifier}");
