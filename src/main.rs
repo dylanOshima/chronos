@@ -1,5 +1,6 @@
 mod cli;
 mod job;
+mod output;
 mod sidecar;
 mod system;
 mod schedule;
