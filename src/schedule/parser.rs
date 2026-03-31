@@ -1,4 +1,5 @@
 use anyhow::Result;
+use super::cron_gen::natural_to_cron;
 
 #[derive(Debug, Clone)]
 pub enum ScheduleKind {
@@ -25,15 +26,13 @@ pub fn classify_schedule(input: &str) -> Result<ScheduleKind> {
 
     // Check for recurring keywords
     if RECURRING_EXACT.contains(&trimmed.as_str()) {
-        return Ok(ScheduleKind::Recurring {
-            cron_expr: trimmed.to_string(),
-        });
+        let cron_expr = natural_to_cron(&trimmed)?;
+        return Ok(ScheduleKind::Recurring { cron_expr });
     }
     for prefix in RECURRING_PREFIXES {
         if trimmed.starts_with(prefix) {
-            return Ok(ScheduleKind::Recurring {
-                cron_expr: trimmed.to_string(),
-            });
+            let cron_expr = natural_to_cron(&trimmed)?;
+            return Ok(ScheduleKind::Recurring { cron_expr });
         }
     }
 
