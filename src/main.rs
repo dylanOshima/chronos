@@ -18,7 +18,7 @@ fn main() -> Result<()> {
             commands::add::run(schedule, command, id, desc, source, force)?;
         }
         Commands::Remove { identifier } => {
-            println!("remove: {identifier}");
+            commands::remove::run(&identifier)?;
         }
         Commands::List { json } => {
             commands::list::run(json)?;
