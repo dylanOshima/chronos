@@ -1,5 +1,6 @@
 mod cli;
 mod job;
+mod sidecar;
 mod system;
 
 use anyhow::Result;
