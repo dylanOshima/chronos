@@ -15,6 +15,7 @@ pub struct Job {
     pub source: String,
     pub job_type: JobType,
     #[serde(skip)]
+    #[allow(dead_code)]
     pub raw_schedule: String,
     pub enabled: bool,
 }

@@ -25,6 +25,7 @@ pub fn parse_atq_output(output: &str) -> Vec<AtEntry> {
         .collect()
 }
 
+#[allow(dead_code)]
 pub fn parse_at_availability_check(success: bool) -> bool {
     success
 }
@@ -94,12 +95,11 @@ pub fn schedule_at_job(datetime: &str, command: &str) -> Result<u32> {
         if line.contains("job") {
             let parts: Vec<&str> = line.split_whitespace().collect();
             for (i, part) in parts.iter().enumerate() {
-                if *part == "job" {
-                    if let Some(num_str) = parts.get(i + 1) {
-                        if let Ok(n) = num_str.parse::<u32>() {
-                            return Ok(n);
-                        }
-                    }
+                if *part == "job"
+                    && let Some(num_str) = parts.get(i + 1)
+                    && let Ok(n) = num_str.parse::<u32>()
+                {
+                    return Ok(n);
                 }
             }
         }

@@ -44,9 +44,9 @@ pub fn parse_crontab(content: &str) -> Vec<CrontabEntry> {
             continue;
         }
 
-        if trimmed.starts_with('#') {
-            // Strip the leading # and any optional space, then check if it's a cron line
-            let after_hash = trimmed[1..].trim_start();
+        if let Some(rest) = trimmed.strip_prefix('#') {
+            // Strip any optional leading space, then check if it's a cron line
+            let after_hash = rest.trim_start();
             if let Some((schedule, command)) = try_parse_cron_line(after_hash) {
                 entries.push(CrontabEntry {
                     schedule,
