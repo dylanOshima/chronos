@@ -27,10 +27,10 @@ fn main() -> Result<()> {
             println!("search: query={query}, json={json}");
         }
         Commands::Enable { identifier } => {
-            println!("enable: {identifier}");
+            commands::enable_disable::run_enable(&identifier)?;
         }
         Commands::Disable { identifier } => {
-            println!("disable: {identifier}");
+            commands::enable_disable::run_disable(&identifier)?;
         }
         Commands::RunOnce { id, cleanup_id, command } => {
             println!("run-once: id={id}, cleanup_id={cleanup_id}");
