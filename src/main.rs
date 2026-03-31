@@ -24,7 +24,7 @@ fn main() -> Result<()> {
             commands::list::run(json)?;
         }
         Commands::Search { query, json } => {
-            println!("search: query={query}, json={json}");
+            commands::search::run(&query, json)?;
         }
         Commands::Enable { identifier } => {
             commands::enable_disable::run_enable(&identifier)?;
