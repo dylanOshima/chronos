@@ -2,6 +2,7 @@ mod cli;
 mod job;
 mod sidecar;
 mod system;
+mod schedule;
 
 use anyhow::Result;
 use clap::Parser;
