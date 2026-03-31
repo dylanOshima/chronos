@@ -1,4 +1,5 @@
 mod cli;
+mod commands;
 mod job;
 mod output;
 mod sidecar;
@@ -20,7 +21,7 @@ fn main() -> Result<()> {
             println!("remove: {identifier}");
         }
         Commands::List { json } => {
-            println!("list: json={json}");
+            commands::list::run(json)?;
         }
         Commands::Search { query, json } => {
             println!("search: query={query}, json={json}");
