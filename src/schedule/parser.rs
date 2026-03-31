@@ -39,8 +39,35 @@ pub fn classify_schedule(input: &str) -> Result<ScheduleKind> {
     }
 
     // Otherwise, treat as a one-off
-    let at_time = natural_to_at_time(&trimmed)?;
-    Ok(ScheduleKind::OneOff { at_time })
+    match natural_to_at_time(&trimmed) {
+        Ok(at_time) => Ok(ScheduleKind::OneOff { at_time }),
+        Err(e) => {
+            if let Some(day) = contains_bare_day_name(&trimmed) {
+                anyhow::bail!(
+                    "Could not parse schedule. Did you mean every {day} at 6pm (recurring) or this {day} at 6pm (once)?",
+                );
+            }
+            Err(e)
+        }
+    }
+}
+
+const DAY_NAMES: &[&str] = &[
+    "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
+    "sun", "mon", "tue", "wed", "thu", "fri", "sat",
+];
+
+fn contains_bare_day_name(input: &str) -> Option<&'static str> {
+    let lower = input.to_lowercase();
+    // Must not start with "every" (those are already handled as recurring)
+    if lower.starts_with("every ") {
+        return None;
+    }
+    // Match any day name as a whole word
+    DAY_NAMES
+        .iter()
+        .find(|&&day| lower.split_whitespace().any(|w| w == day))
+        .copied()
 }
 
 fn natural_to_at_time(input: &str) -> Result<String> {

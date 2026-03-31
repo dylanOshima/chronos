@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crate::sidecar::{self, Sidecar};
-use crate::system::crontab;
+use crate::system::{crontab, at};
 
 pub fn run_enable(identifier: &str) -> Result<()> {
     let raw_line = resolve_identifier(identifier)?;
@@ -25,6 +25,13 @@ fn resolve_identifier(identifier: &str) -> Result<String> {
         let crontab_content = crontab::read_system_crontab()?;
         let entries = crontab::parse_crontab(&crontab_content);
         if row_num == 0 || row_num > entries.len() {
+            // Check if this row number corresponds to an at job in the combined list
+            let at_entries = at::read_at_queue().unwrap_or_default();
+            let total_cron = entries.len();
+            let total_combined = total_cron + at_entries.len();
+            if row_num > total_cron && row_num <= total_combined {
+                anyhow::bail!("Job #{row_num} is an at job — enable/disable only applies to cron jobs.");
+            }
             anyhow::bail!("Row number {row_num} out of range (total cron jobs: {})", entries.len());
         }
         return Ok(entries[row_num - 1].raw_line.clone());
