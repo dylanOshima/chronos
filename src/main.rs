@@ -33,7 +33,7 @@ fn main() -> Result<()> {
             commands::enable_disable::run_disable(&identifier)?;
         }
         Commands::RunOnce { id, cleanup_id, command } => {
-            println!("run-once: id={id}, cleanup_id={cleanup_id}");
+            commands::run_once::run(&id, &cleanup_id, command)?;
         }
     }
 
