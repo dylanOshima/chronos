@@ -31,11 +31,27 @@ pub fn parse_at_availability_check(success: bool) -> bool {
 }
 
 pub fn is_at_available() -> bool {
-    Command::new("which")
+    let has_binary = Command::new("which")
         .arg("at")
         .output()
         .map(|o| o.status.success())
-        .unwrap_or(false)
+        .unwrap_or(false);
+
+    if !has_binary {
+        return false;
+    }
+
+    // On macOS, `at` exists but the daemon (atrun) is disabled by default.
+    // Check that it's actually loaded before declaring `at` usable.
+    if cfg!(target_os = "macos") {
+        return Command::new("launchctl")
+            .args(["list", "com.apple.atrun"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+    }
+
+    true
 }
 
 pub fn extract_command_from_at_script(script: &str) -> String {
