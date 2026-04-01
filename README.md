@@ -89,6 +89,16 @@ A lightweight metadata file at `~/.config/chronos/meta.toml` (respects `$XDG_CON
 
 When `at` is not available on the system, one-off jobs fall back to a self-destructing cron pair that removes itself after firing.
 
+## Claude Code plugin
+
+A [Claude Code plugin](https://github.com/dylanOshima/skills) is available so that Claude can use Chronos directly. With the plugin installed, Claude will automatically schedule, list, and manage jobs when you ask it to -- and it will install Chronos for you if it's not already on your system.
+
+Install the plugin in Claude Code:
+
+```
+/install-plugin https://github.com/dylanOshima/skills --plugin chronos
+```
+
 ## Example: Claude scheduling
 
 Have Claude schedule a command to run later:
