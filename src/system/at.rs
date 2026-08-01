@@ -43,9 +43,12 @@ pub fn is_at_available() -> bool {
 
     // On macOS, `at` exists but the daemon (atrun) is disabled by default.
     // Check that it's actually loaded before declaring `at` usable.
+    // `launchctl list` only sees the per-user domain, where system daemons
+    // never appear — query the system domain via `print`, which works
+    // without sudo and succeeds only when atrun is bootstrapped.
     if cfg!(target_os = "macos") {
         return Command::new("launchctl")
-            .args(["list", "com.apple.atrun"])
+            .args(["print", "system/com.apple.atrun"])
             .output()
             .map(|o| o.status.success())
             .unwrap_or(false);
@@ -87,12 +90,22 @@ pub fn read_at_queue() -> Result<Vec<AtEntry>> {
     Ok(entries)
 }
 
+/// Convert the internal "HH:MM YYYY-MM-DD" one-off time into the POSIX
+/// `at -t` operand ([[CC]YY]MMDDhhmm). BSD/macOS `at` rejects the natural
+/// "HH:MM YYYY-MM-DD" form that GNU at accepts, so `-t` is the portable path.
+fn at_timestamp(datetime: &str) -> Result<String> {
+    let dt = chrono::NaiveDateTime::parse_from_str(datetime, "%H:%M %Y-%m-%d")
+        .map_err(|e| anyhow::anyhow!("Failed to parse datetime '{datetime}': {e}"))?;
+    Ok(dt.format("%Y%m%d%H%M").to_string())
+}
+
 pub fn schedule_at_job(datetime: &str, command: &str) -> Result<u32> {
     use std::io::Write;
     use std::process::Stdio;
 
     let mut child = Command::new("at")
-        .arg(datetime)
+        .arg("-t")
+        .arg(at_timestamp(datetime)?)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -139,6 +152,14 @@ pub fn remove_at_job(job_number: u32) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_at_timestamp_conversion() {
+        // internal "HH:MM YYYY-MM-DD" → POSIX `at -t` [[CC]YY]MMDDhhmm
+        assert_eq!(at_timestamp("16:43 2026-08-01").unwrap(), "202608011643");
+        assert_eq!(at_timestamp("05:02 2099-01-01").unwrap(), "209901010502");
+        assert!(at_timestamp("now + 5 minutes").is_err());
+    }
 
     #[test]
     fn test_parse_atq_output() {
